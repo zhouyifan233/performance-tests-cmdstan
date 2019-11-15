@@ -24,7 +24,6 @@ SEP_RE = "\\\\" if os.sep == "\\" else "/"
 EXE_FILE_EXT = ".exe" if os.name == "nt" else ""
 def find_files(pattern, dirs):
     res = []
-    print(dirs)
     for pd in dirs:
         for d, _, flist in os.walk(pd):
             for f in flist:
@@ -91,7 +90,6 @@ def shexec(command, wd = "."):
     return returncode
 
 def make(targets, j=8):
-    print(len(targets))
     for i in range(len(targets)):
         prefix = ""
         if not targets[i].startswith(os.sep):
