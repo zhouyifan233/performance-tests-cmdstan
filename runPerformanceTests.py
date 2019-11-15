@@ -24,6 +24,7 @@ SEP_RE = "\\\\" if os.sep == "\\" else "/"
 EXE_FILE_EXT = ".exe" if os.name == "nt" else ""
 def find_files(pattern, dirs):
     res = []
+    print(dirs)
     for pd in dirs:
         for d, _, flist in os.walk(pd):
             for f in flist:
@@ -90,14 +91,15 @@ def shexec(command, wd = "."):
     return returncode
 
 def make(targets, j=8):
+    print(len(targets))
     for i in range(len(targets)):
         prefix = ""
         if not targets[i].startswith(os.sep):
-            prefix = DIR_UP
+            prefix = os.path.join("/performance-test-cmdstan/","")
         targets[i] = prefix + targets[i] + EXE_FILE_EXT
     try:
         shexec("make -i -j{} {}"
-            .format(j, " ".join(targets)), wd = "cmdstan")
+            .format(j, " ".join(targets)), wd = "..")
     except FailedCommand:
         print("Failed to make at least some targets")
 
@@ -352,7 +354,7 @@ def delete_temporary_exe_files(exes):
 
 if __name__ == "__main__":
     args = parse_args()
-
+    
     models = None
 
     default_num_samples = 1000
