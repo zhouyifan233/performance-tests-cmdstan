@@ -17,7 +17,7 @@ from datetime import datetime
 import xml.etree.ElementTree as ET
 import multiprocessing
 
-GOLD_OUTPUT_DIR = os.path.join("golds","")
+GOLD_OUTPUT_DIR = os.path.join("performance-tests-cmdstan/golds","")
 DIR_UP = os.path.join("..","")
 CURR_DIR = os.path.join(".","")
 SEP_RE = "\\\\" if os.sep == "\\" else "/"
@@ -90,14 +90,22 @@ def shexec(command, wd = "."):
     return returncode
 
 def make(targets, j=8):
+    print(len(targets))
     for i in range(len(targets)):
         prefix = ""
-        if not targets[i].startswith(os.sep):
-            prefix = os.path.join("/performance-test-cmdstan/","")
-        targets[i] = prefix + targets[i] + EXE_FILE_EXT
+        #if not targets[i].startswith(os.sep):
+            #prefix = os.path.join("/performance-test-cmdstan/","")
+        targets[i] = targets[i] + EXE_FILE_EXT
     try:
+        name = os.path.basename(targets[i])
+        formatted_name = ""
+        for char in name:
+            if char.isalnum():
+                formatted_name = formatted_name + char
+        shexec("bin/stanc --name={} --o={} {}"
+            .format(formatted_name,targets[i]+'.hpp',targets[i]+'.stan'), wd = ".")
         shexec("make -i -j{} {}"
-            .format(j, " ".join(targets)), wd = "..")
+            .format(j, " ".join(targets)), wd = ".")
     except FailedCommand:
         print("Failed to make at least some targets")
 
@@ -161,13 +169,14 @@ def csv_summary(csv_file):
     with open(csv_file, 'rb') as raw:
         headers = None
         for row in csv.reader(raw):
-            if row[0].startswith("#"):
-                continue
-            if headers is None:
-                headers = row
-                continue
-            for i in range(0, len(row)):
-                d[headers[i]].append(float(row[i]))
+            if len(row) != 0:
+                if row[0].startswith("#"):
+                    continue
+                if headers is None:
+                    headers = row
+                    continue
+                for i in range(0, len(row)):
+                    d[headers[i]].append(float(row[i]))
     res = {}
     for k, v in d.items():
         if k.endswith("__"):
@@ -206,8 +215,11 @@ def run_model(exe, method, data, tmp, runs, num_samples):
                 num_samples_str = ""
                 if method == "sample":
                     num_samples_str = "num_samples={} num_warmup={}".format(num_samples, num_samples)
-                shexec("{} method={} {} {} random seed=1234 output file={}"
+                    shexec("{} method={} {} {} random seed=1234 output file={}"
                     .format(exe, method, num_samples_str, data_str, tmp))
+                if method == "smc-sample":
+                    shexec("mpirun -np 2 {} {} method=sample algorithm=smcs proposal=rw T=2 {} random seed=1234 output file={}"
+                    .format(exe, num_samples_str, data_str, tmp))
             except FailedCommand as e:
                 if e.returncode == 78:
                     run_as_fixed_param()
