@@ -218,7 +218,7 @@ def run_model(exe, method, data, tmp, runs, num_samples):
                     shexec("{} method={} {} {} random seed=1234 output file={}"
                     .format(exe, method, num_samples_str, data_str, tmp))
                 if method == "smc-sample":
-                    shexec("mpirun -np 2 {} {} method=sample algorithm=smcs proposal=rw T=2 {} random seed=1234 output file={}"
+                    shexec("mpirun -np 1 {} {} method=sample algorithm=smcs proposal=rw T=2 {} random seed=1234 output file={}"
                     .format(exe, num_samples_str, data_str, tmp))
             except FailedCommand as e:
                 if e.returncode == 78:
