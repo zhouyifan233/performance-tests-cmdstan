@@ -166,7 +166,7 @@ def stdev(coll, mean):
 
 def csv_summary(csv_file):
     d = defaultdict(list)
-    with open(csv_file, 'rb') as raw:
+    with open(csv_file, 'r') as raw:
         headers = None
         for row in csv.reader(raw):
             if len(row) != 0:
@@ -270,23 +270,31 @@ def run(exe, data, overwrite, check_golds, check_golds_exact, runs, method, num_
     if runs <= 0:
         return 0, (fails, errors)
 
-    gold = os.path.join(GOLD_OUTPUT_DIR,
-                        exe.replace(DIR_UP, "").replace(os.sep, "_") + ".gold")
-    tmp = gold + ".tmp"
-    try:
-        total_time = run_model(exe, method, data, tmp, runs, num_samples)
-    except Exception as e:
-        print("Encountered exception while running {}:".format(exe))
-        print(e)
-        return 0, (fails, errors + [str(e)])
-    summary = csv_summary(tmp)
-    with open(tmp, "w+") as f:
-        f.writelines(format_summary_lines(summary))
+    if 0:
+    # Run comparison
+        gold = os.path.join(GOLD_OUTPUT_DIR,
+                            exe.replace(DIR_UP, "").replace(os.sep, "_") + ".gold")
+        tmp = gold + ".tmp"
+        try:
+            total_time = run_model(exe, method, data, tmp, runs, num_samples)
+        except Exception as e:
+            print("Encountered exception while running {}:".format(exe))
+            print(e)
+            return 0, (fails, errors + [str(e)])
+        print("summary file: " + tmp)
+        summary = csv_summary(tmp)
+        with open(tmp, "a") as f:
+            f.writelines(format_summary_lines(summary))
 
-    if overwrite:
-        shexec("mv {} {}".format(tmp, gold))
-    elif check_golds or check_golds_exact:
-        fails, errors = run_golds(gold, tmp, summary, check_golds_exact)
+        if overwrite:
+            shexec("mv {} {}".format(tmp, gold))
+        elif check_golds or check_golds_exact:
+            fails, errors = run_golds(gold, tmp, summary, check_golds_exact)
+    else:
+    # Run pystan + control variate
+        total_time = 0.0
+        print("exe file: " + str(exe))
+        print("data file: " + str(data))
 
     return total_time, (fails, errors)
 
