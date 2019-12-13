@@ -44,10 +44,13 @@ def getParameterNames(model):
         valid_line = re.search('(.*);', line)
         if valid_line:
             valid_line = valid_line.group(1)
-            sep_line = re.search('[ ]*([^ ]*)[ ]*([^ \[\]]*)', valid_line)
-            if sep_line:
-                type_str = sep_line.group(1)
-                var_str = sep_line.group(2)
+            type_str = re.search('[ ]*([^ <>\[\]]*).*', valid_line)
+            range_str = re.search('[^<>]*<([^<>]*)>.*', valid_line)
+            size_str = re.search('[^\[\]]*\[([^\[\]]*)\].*', valid_line)
+            var_str = re.search('.* ([^ ]*)[ ]*.*', valid_line)
+            if (type_str is not None) and (var_str is not None):
+                type_str = type_str.group(1)
+                var_str = var_str.group(1)
                 var_type_dic[var_str] = type_str
                 parameter_names.append(var_str)
 
