@@ -16,6 +16,7 @@ from time import time
 from datetime import datetime
 import xml.etree.ElementTree as ET
 import multiprocessing
+from PerformanceTest_ZVCV import run_ZVCV
 
 GOLD_OUTPUT_DIR = os.path.join("performance-tests-cmdstan/golds","")
 DIR_UP = os.path.join("..","")
@@ -295,6 +296,8 @@ def run(exe, data, overwrite, check_golds, check_golds_exact, runs, method, num_
         total_time = 0.0
         print("exe file: " + str(exe))
         print("data file: " + str(data))
+        fit_model = run_ZVCV(str(exe))
+        print("----------------------------------------------------------------")
 
     return total_time, (fails, errors)
 
@@ -397,7 +400,8 @@ if __name__ == "__main__":
     tests = [(model, exe, find_data_for_model(model), ns)
              for model, exe, ns in zip(models, executables, num_samples)]
 
-    make_time, _ = time_step("make_all_models", make, executables, args.j)
+    #make_time, _ = time_step("make_all_models", make, executables, args.j)
+    make_time = 0
     if args.runj > 1:
         tp = ThreadPool(args.runj)
         map_ = tp.imap_unordered

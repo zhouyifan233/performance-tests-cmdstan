@@ -17,7 +17,14 @@ def verifyDataType(model, data):
         valid_line = re.search('(.*);', line)
         if valid_line:
             valid_line = valid_line.group(1)
-            sep_line = re.search('[ ]*([^ ]*)[ ]*([^ \[\]]*)', valid_line)
+
+            # pull out size
+            size_part = re.search('\[([^\[\]]*)\]', valid_line)
+            if size_part is None:
+                sep_line = re.search('[ ]*([^ ]*)[ ]*([^ \[\]]*)', valid_line)
+            else:
+                valid_line_1 = re.sub('\[([^\[\]]*)\]', '', valid_line)
+                sep_line = re.search('[ ]*([^ ]*)[ ]*([^ \[\]]*)', valid_line_1)
             if sep_line:
                 type_str = sep_line.group(1)
                 var_str = sep_line.group(2)
@@ -44,10 +51,13 @@ def getParameterNames(model):
         valid_line = re.search('(.*);', line)
         if valid_line:
             valid_line = valid_line.group(1)
-            sep_line = re.search('[ ]*([^ ]*)[ ]*([^ \[\]]*)', valid_line)
-            if sep_line:
-                type_str = sep_line.group(1)
-                var_str = sep_line.group(2)
+            type_str = re.search('[ ]*([^ <>\[\]]*).*', valid_line)
+            range_str = re.search('[^<>]*<([^<>]*)>.*', valid_line)
+            size_str = re.search('[^\[\]]*\[([^\[\]]*)\].*', valid_line)
+            var_str = re.search('.* ([^ \[\]\<\>]*)[ ]*.*', valid_line)
+            if (type_str is not None) and (var_str is not None):
+                type_str = type_str.group(1)
+                var_str = var_str.group(1)
                 var_type_dic[var_str] = type_str
                 parameter_names.append(var_str)
 
@@ -60,6 +70,7 @@ def run_ZVCV(file_dir):
     # file_dir = 'performance-tests-cmdstan/example-models/BPA/Ch.03/GLM_Poisson'
     # file_dir = 'performance-tests-cmdstan/example-models/BPA/Ch.05/ssm'
     # file_dir = 'performance-tests-cmdstan/example-models/basic_estimators/bernoulli'
+    # file_dir = 'performance-tests-cmdstan/example-models/basic_estimators/negative_binomial2'
     robjects.globalenv.clear()
     # Assume the stan model file ends with .stan
     model_file = file_dir + '.stan'
@@ -82,31 +93,26 @@ def run_ZVCV(file_dir):
 
     # run stan
     sm = pystan.StanModel(file=model_file)
-    data, parameter_names = verifyDataType(sm, data)
+    data = verifyDataType(sm, data)
     parameter_names = getParameterNames(sm)
     try:
         fit = sm.sampling(data=data, chains=1, iter=1000, verbose=True)
 
         # Extract parameters
         parameter_extract = fit.extract()
-        parameter_values = []
-        for parameter_name in parameter_names:
-            parameter_values.append(parameter_extract[parameter_name])
-        mcmc_samples = np.asarray(parameter_values)
-        mcmc_samples = mcmc_samples.T
+        num_of_iter = parameter_extract['lp__'].shape[0]
 
         # Unconstraint mcmc samples.
         unconstrain_mcmc_samples = []
-        for i in range(mcmc_samples.shape[0]):
+        for i in range(num_of_iter):
             tmp_dict = {}
             for j, parameter_name in enumerate(parameter_names):
-                tmp_dict[parameter_name] = mcmc_samples[i, j]
+                tmp_dict[parameter_name] = parameter_extract[parameter_name][i]
             unconstrain_mcmc_samples.append(fit.unconstrain_pars(tmp_dict))
         unconstrain_mcmc_samples = np.asarray(unconstrain_mcmc_samples)
 
         # Calculate gradients of the log-probability
         # In this case, it seems unconstraint and constraint parameters are the same.
-        num_of_iter = mcmc_samples.shape[0]
         grad_log_prob_val = []
         for i in range(num_of_iter):
             grad_log_prob_val.append(fit.grad_log_prob(unconstrain_mcmc_samples[i], adjust_transform=False))
