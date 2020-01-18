@@ -277,10 +277,15 @@ def run(exe, data, overwrite, check_golds, check_golds_exact, runs, method, num_
                             exe.replace(DIR_UP, "").replace(os.sep, "_") + ".gold")
         tmp = gold + ".tmp"
         try:
-            total_time = run_model(exe, method, data, tmp, runs, num_samples)
+            #total_time = run_model(exe, method, data, tmp, runs, num_samples)
+            total_time = 0.0
+            print("exe file: " + str(exe))
+            print("data file: " + str(data))
+            fit_model = run_ZVCV(str(exe))
         except Exception as e:
             print("Encountered exception while running {}:".format(exe))
             print(e)
+            print("----------------------------------------------------------------")
             return 0, (fails, errors + [str(e)])
         print("summary file: " + tmp)
         summary = csv_summary(tmp)
@@ -296,9 +301,14 @@ def run(exe, data, overwrite, check_golds, check_golds_exact, runs, method, num_
         total_time = 0.0
         print("exe file: " + str(exe))
         print("data file: " + str(data))
-        fit_model = run_ZVCV(str(exe))
-        print("----------------------------------------------------------------")
-
+        try:
+            fit_model = run_ZVCV(str(exe))
+        except Exception as e:
+            print("Encountered exception while running {}:".format(exe))
+            print(e)
+            print("----------------------------------------------------------------")
+            return 0, (fails, errors + [str(e)])
+    print("----------------------------------------------------------------")
     return total_time, (fails, errors)
 
 def test_results_xml(tests):
@@ -400,26 +410,31 @@ if __name__ == "__main__":
     tests = [(model, exe, find_data_for_model(model), ns)
              for model, exe, ns in zip(models, executables, num_samples)]
 
-    #make_time, _ = time_step("make_all_models", make, executables, args.j)
-    make_time = 0
-    if args.runj > 1:
-        tp = ThreadPool(args.runj)
-        map_ = tp.imap_unordered
-    else:
-        map_ = map
-    results = map_(process_test(args.overwrite, args.check_golds,
-                                args.check_golds_exact, args.runs,
-                                args.method),
-                    tests)
-    results = list(results)
-    results.append(("{}.compilation".format(args.name), make_time, [], []))
-    test_results_xml(results).write("{}.xml".format(args.name))
-    with open("{}.csv".format(args.name), "w") as f:
-        f.write(test_results_csv(results))
-    failed = False
-    for model, _, fails, errors in results:
-        if fails or errors:
-            print("'{}' had fails '{}' and errors '{}'".format(model, fails, errors))
-            failed = True
-    if failed:
-        sys.exit(-1)
+    with open('list_of_examples.txt', 'w') as f:
+        for ele in tests:
+            f.write(ele[1] + '\n')
+
+    if 0:
+        #make_time, _ = time_step("make_all_models", make, executables, args.j)
+        make_time = 0
+        if args.runj > 1:
+            tp = ThreadPool(args.runj)
+            map_ = tp.imap_unordered
+        else:
+            map_ = map
+        results = map_(process_test(args.overwrite, args.check_golds,
+                                    args.check_golds_exact, args.runs,
+                                    args.method),
+                        tests)
+        results = list(results)
+        results.append(("{}.compilation".format(args.name), make_time, [], []))
+        test_results_xml(results).write("{}.xml".format(args.name))
+        with open("{}.csv".format(args.name), "w") as f:
+            f.write(test_results_csv(results))
+        failed = False
+        for model, _, fails, errors in results:
+            if fails or errors:
+                print("'{}' had fails '{}' and errors '{}'".format(model, fails, errors))
+                failed = True
+        if failed:
+            sys.exit(-1)
