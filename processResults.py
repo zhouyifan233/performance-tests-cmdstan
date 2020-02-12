@@ -6,6 +6,9 @@ import numpy as np
 filenames = glob.glob('ZVCV_comparison/*.csv')
 cnt = 0
 cnt1 = 0
+linear_improve = []
+quad_improve = []
+
 for i, filename in enumerate(filenames):
     print(str(i) + "  filename: " + filename)
     flag_ = True
@@ -24,25 +27,20 @@ for i, filename in enumerate(filenames):
         print("mcmc error 2...")
     '''
     if np.all(linear_re == -1.0):
-        flag_ = False
-        print("linear CV error...")
-
-    if np.all(quad_re == -1.0):
-        flag_ = False
-        print("quadratic CV error...")
-    if np.all(quad_re == 0.0):
-        flag_ = False
-        print("quadratic CV is not processed due to potential memory issue...")
-
-    if flag_:
-        cnt += 1
-
-    if flag_:
-        mcmc_var_mean = np.mean(mcmc_var)
-        linear_var_mean = np.mean(linear_var)
-        quad_var_mean = np.mean(quad_var)
-
-        if quad_var_mean < mcmc_var_mean:
-            cnt1 += 1
+        linear_improve_ = np.nan
+        linear_improve.append(linear_improve_)
+    else:
+        linear_improve_ = np.log(np.mean(mcmc_var / linear_var))
+        linear_improve.append(linear_improve_)
+    if np.all(quad_re == -1.0) or np.all(quad_re == 0.0):
+        quad_improve_ = np.nan
+        quad_improve.append(quad_improve_)
+    else:
+        quad_improve_ = np.log(np.mean(mcmc_var / quad_var))
+        quad_improve.append(quad_improve_)
 
     print("---------------------------------")
+
+results_df = pd.DataFrame({'Examples': filenames, 'linear CV improvement': linear_improve,
+                           'quadratic CV improvement': quad_improve})
+results_df.to_csv('conclusions.csv')

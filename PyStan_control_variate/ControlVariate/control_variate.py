@@ -9,7 +9,12 @@ def control_variate_linear(mcmc_samples, mcmc_gradients):
     sc_cov = np.cov(sc_matrix.T)
     Sigma_cs = sc_cov[0:dim, dim:dim * 2].T
     Sigma_cc = sc_cov[dim:dim*2, dim:dim*2]
-    zv = (-np.linalg.inv(Sigma_cc) @ Sigma_cs).T @ control.T
+    try:
+        zv = (-np.linalg.inv(Sigma_cc) @ Sigma_cs).T @ control.T
+    except np.linalg.LinAlgError as err:
+        if err == 'Singular matrix':
+            zv = (-np.linalg.inv(Sigma_cc+1e-15) @ Sigma_cs).T @ control.T
+
     new_mcmc_samples = mcmc_samples + zv.T
 
     print('LINEAR: new_mcmc_samples variance: ')

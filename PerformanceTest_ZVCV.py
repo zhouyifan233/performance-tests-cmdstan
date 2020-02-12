@@ -1,10 +1,11 @@
-import pystan
 import numpy as np
 import pandas as pd
 import rpy2.robjects as robjects
 import re
 from PyStan_control_variate.ControlVariate.control_variate import control_variate_linear, control_variate_quadratic
 from PyStan_control_variate.ControlVariate.plot_comparison import plot_comparison
+import logging
+import pystan
 
 
 def verifyDataType(model, data):
@@ -48,7 +49,24 @@ def getParameterNames(model):
     var_type_dic = {}
     parameter_names = []
     for line in data_lines:
+        line = re.sub('(//.*)', '', line)
         valid_line = re.search('(.*);', line)
+        if valid_line:
+            valid_line = valid_line.group(1)
+            # pull out size in []
+            size_part = re.search('\[([^\[\]]*)\]', valid_line)
+            if size_part is not None:
+                valid_line = re.sub('\[([^\[\]]*)\]', '', valid_line)
+            range_str = re.search('\<([^\<\>]*)\>', valid_line)
+            if range_str is not None:
+                valid_line = re.sub('\<([^\<\>]*)\>', '', valid_line)
+            sep_line = re.search('[ ]*([^ ]*)[ ]*([^ \[\]]*)', valid_line)
+            if sep_line:
+                type_str = sep_line.group(1)
+                var_str = sep_line.group(2)
+                var_type_dic[var_str] = type_str
+                parameter_names.append(var_str)
+        '''
         if valid_line:
             valid_line = valid_line.group(1)
             type_str = re.search('[ ]*([^ <>\[\]]*).*', valid_line)
@@ -60,7 +78,7 @@ def getParameterNames(model):
                 var_str = var_str.group(1)
                 var_type_dic[var_str] = type_str
                 parameter_names.append(var_str)
-
+        '''
     return parameter_names
 
 
@@ -94,7 +112,6 @@ def run_ZVCV(file_dir):
                     data[var] = data_
         else:
             data = None
-
         # run stan
         sm = pystan.StanModel(file=model_file)
         data = verifyDataType(sm, data)
