@@ -25,11 +25,9 @@ for i, example_path in enumerate(list_examples):
     print('------------------------------------------------------------------------')
     print(i)
     print(example_path)
-    print()
-    sys.stderr.write('------------------------------------------------------------------------')
-    print(i)
-    print(example_path)
-    print()
+    sys.stderr.write('------------------------------------------------------------------------ \n')
+    sys.stderr.write('Example Index: ' + str(i) + ' \n')
+    sys.stderr.write('Example Path: ' + example_path + ' \n')
     # example_name_parts = example_path.split('/')
     example_name = example_path.replace('/', '--')
     unconstrain_mcmc_samples, cv_linear_mcmc_samples, cv_quad_mcmc_samples = run_ZVCV(example_path)
@@ -58,6 +56,7 @@ for i, example_path in enumerate(list_examples):
         result_df.to_csv(output_path + example_name + '.csv')
 
     print('------------------------------------------------------------------------')
+    sys.stderr.write('------------------------------------------------------------------------ \n')
 
     if 0:
         with open(output_path + example_name + '.dat', 'w') as f:
