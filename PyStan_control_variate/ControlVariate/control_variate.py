@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 
 
 def control_variate_linear(mcmc_samples, mcmc_gradients):
@@ -9,12 +10,14 @@ def control_variate_linear(mcmc_samples, mcmc_gradients):
     sc_cov = np.cov(sc_matrix.T)
     Sigma_cs = sc_cov[0:dim, dim:dim * 2].T
     Sigma_cc = sc_cov[dim:dim*2, dim:dim*2]
-    try:
-        zv = (-np.linalg.inv(Sigma_cc) @ Sigma_cs).T @ control.T
-    except np.linalg.LinAlgError as err:
-        if err == 'Singular matrix':
-            zv = (-np.linalg.inv(Sigma_cc+1e-15) @ Sigma_cs).T @ control.T
 
+    if np.linalg.cond(Sigma_cc) < 1/sys.float_info.epsilon:
+        zv = (-np.linalg.inv(Sigma_cc) @ Sigma_cs).T @ control.T
+    elif np.linalg.cond(Sigma_cc + 1e-12) < 1/sys.float_info.epsilon:
+        zv = (-np.linalg.inv(Sigma_cc + 1e-12) @ Sigma_cs).T @ control.T
+    else:
+        print('LINEAR CV Error: Singularity matrix...')
+        return None
     new_mcmc_samples = mcmc_samples + zv.T
 
     print('LINEAR: new_mcmc_samples variance: ')
@@ -45,7 +48,14 @@ def control_variate_quadratic(mcmc_samples, mcmc_gradients):
     Sigma_cs = sc_cov[0:dim, dim:dim+dim_control].T
     Sigma_cc = sc_cov[dim:dim+dim_control, dim:dim+dim_control]
 
-    zv = (-np.linalg.inv(Sigma_cc) @ Sigma_cs).T @ control.T
+    if np.linalg.cond(Sigma_cc) < 1/sys.float_info.epsilon:
+        zv = (-np.linalg.inv(Sigma_cc) @ Sigma_cs).T @ control.T
+    elif np.linalg.cond(Sigma_cc + 1e-12) < 1/sys.float_info.epsilon:
+        zv = (-np.linalg.inv(Sigma_cc + 1e-12) @ Sigma_cs).T @ control.T
+    else:
+        print('QUADRATIC CV Error: Singularity matrix...')
+        return None
+
     new_mcmc_samples = mcmc_samples + zv.T
 
     print('QUADRATIC: new_mcmc_samples variance: ')

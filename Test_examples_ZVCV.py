@@ -18,16 +18,18 @@ with open('list_of_examples.txt', 'r') as f:
 print(list_examples)
 
 # run test
-start_i = 435    # 434
+start_i = 0    # 434
 for i, example_path in enumerate(list_examples):
-    if i < start_i:
-        continue
     print('------------------------------------------------------------------------')
     print(i)
     print(example_path)
     sys.stderr.write('------------------------------------------------------------------------ \n')
     sys.stderr.write('Example Index: ' + str(i) + ' \n')
     sys.stderr.write('Example Path: ' + example_path + ' \n')
+
+    if (i < start_i) or (i == 434):
+        continue
+
     # example_name_parts = example_path.split('/')
     example_name = example_path.replace('/', '--')
     unconstrain_mcmc_samples, cv_linear_mcmc_samples, cv_quad_mcmc_samples = run_ZVCV(example_path)

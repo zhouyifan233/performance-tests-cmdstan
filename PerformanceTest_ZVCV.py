@@ -10,7 +10,7 @@ import pystan
 
 def verifyDataType(model, data):
     model_str = model.model_code
-    data_patch = re.search('data[ ]*{([^{|^}]*)}', model_str)
+    data_patch = re.search('data[ ]*{([^{}]*)}', model_str)
     data_str = data_patch.group(1)
     data_lines = data_str.split('\n')
     var_type_dic = {}
@@ -21,11 +21,16 @@ def verifyDataType(model, data):
 
             # pull out size
             size_part = re.search('\[([^\[\]]*)\]', valid_line)
-            if size_part is None:
-                sep_line = re.search('[ ]*([^ ]*)[ ]*([^ \[\]]*)', valid_line)
-            else:
+            if size_part is not None:
                 valid_line_1 = re.sub('\[([^\[\]]*)\]', '', valid_line)
-                sep_line = re.search('[ ]*([^ ]*)[ ]*([^ \[\]]*)', valid_line_1)
+            else:
+                valid_line_1 = valid_line
+            range_str = re.search('\<([^\<\>]*)\>', valid_line_1)
+            if range_str is not None:
+                valid_line_2 = re.sub('\<([^\<\>]*)\>', '', valid_line)
+            else:
+                valid_line_2 = valid_line_1
+            sep_line = re.search('[ ]*([^ ]*)[ ]*([^ \[\]]*)', valid_line_2)
             if sep_line:
                 type_str = sep_line.group(1)
                 var_str = sep_line.group(2)
@@ -43,7 +48,7 @@ def verifyDataType(model, data):
 
 def getParameterNames(model):
     model_str = model.model_code
-    data_patch = re.search('parameters[ ]*{([^{|^}]*)}', model_str)
+    data_patch = re.search('parameters[ ]*{([^{}]*)}', model_str)
     data_str = data_patch.group(1)
     data_lines = data_str.split('\n')
     var_type_dic = {}
@@ -92,6 +97,7 @@ def run_ZVCV(file_dir):
     # file_dir = 'performance-tests-cmdstan/example-models/BPA/Ch.05/ssm'
     # file_dir = 'performance-tests-cmdstan/example-models/basic_estimators/bernoulli'
     # file_dir = 'performance-tests-cmdstan/example-models/basic_estimators/negative_binomial2'
+    # file_dir = 'example-models/ARM/Ch.17/latent_glm_17.7'
     try:
         robjects.globalenv.clear()
         # Assume the stan model file ends with .stan
