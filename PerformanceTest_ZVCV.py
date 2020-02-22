@@ -6,6 +6,7 @@ from PyStan_control_variate.ControlVariate.control_variate import control_variat
 from PyStan_control_variate.ControlVariate.plot_comparison import plot_comparison
 import logging
 import pystan
+from os import path
 
 
 def verifyDataType(model, data):
@@ -91,12 +92,6 @@ def run_ZVCV(file_dir):
     unconstrain_mcmc_samples = None
     cv_linear_mcmc_samples = None
     cv_quad_mcmc_samples = None
-    # file_dir = 'performance-tests-cmdstan/example-models/BPA/Ch.09/lifedead'
-    # file_dir = 'performance-tests-cmdstan/example-models/BPA/Ch.03/GLM_Binomial'
-    # file_dir = 'performance-tests-cmdstan/example-models/BPA/Ch.03/GLM_Poisson'
-    # file_dir = 'performance-tests-cmdstan/example-models/BPA/Ch.05/ssm'
-    # file_dir = 'performance-tests-cmdstan/example-models/basic_estimators/bernoulli'
-    # file_dir = 'performance-tests-cmdstan/example-models/basic_estimators/negative_binomial2'
     # file_dir = 'example-models/ARM/Ch.17/latent_glm_17.7'
     try:
         robjects.globalenv.clear()
@@ -105,24 +100,29 @@ def run_ZVCV(file_dir):
         # Assume the data file ends with .data.R
         data_file = file_dir + '.data.R'
         # read data into env
-        robjects.r['source'](data_file)
-        # variables
-        vars = list(robjects.globalenv.keys())
-        if len(vars) > 0:
-            data = {}
-            for var in vars:
-                data_ = np.array(robjects.globalenv.find(var))
-                if (data_.ndim == 1) and (data_.shape[0] == 1):
-                    data[var] = data_[0]
-                else:
-                    data[var] = data_
+        if path.exists(data_file):
+            robjects.r['source'](data_file)
+            # variables
+            vars = list(robjects.globalenv.keys())
+            if len(vars) > 0:
+                data = {}
+                for var in vars:
+                    data_ = np.array(robjects.globalenv.find(var))
+                    if (data_.ndim == 1) and (data_.shape[0] == 1):
+                        data[var] = data_[0]
+                    else:
+                        data[var] = data_
+            else:
+                data = None
         else:
             data = None
+
         # run stan
         sm = pystan.StanModel(file=model_file)
-        data = verifyDataType(sm, data)
         parameter_names = getParameterNames(sm)
 
+        if data is not None:
+            data = verifyDataType(sm, data)
         fit = sm.sampling(data=data, chains=1, iter=5000, verbose=True)
 
         # Extract parameters

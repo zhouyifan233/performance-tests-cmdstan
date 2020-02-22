@@ -5,6 +5,7 @@ import sys
 
 
 # Parameters
+# output_path = 'performance-tests-cmdstan/ZVCV_comparison/'
 output_path = 'performance-tests-cmdstan/ZVCV_comparison/'
 
 # Read list of examples
@@ -18,7 +19,7 @@ with open('list_of_examples.txt', 'r') as f:
 print(list_examples)
 
 # run test
-start_i = 0    # 434
+start_i = 393    # 390 cv issue; 392;
 for i, example_path in enumerate(list_examples):
     print('------------------------------------------------------------------------')
     print(i)

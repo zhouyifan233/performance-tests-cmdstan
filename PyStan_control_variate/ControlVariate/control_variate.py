@@ -50,8 +50,8 @@ def control_variate_quadratic(mcmc_samples, mcmc_gradients):
 
     if np.linalg.cond(Sigma_cc) < 1/sys.float_info.epsilon:
         zv = (-np.linalg.inv(Sigma_cc) @ Sigma_cs).T @ control.T
-    elif np.linalg.cond(Sigma_cc + 1e-12) < 1/sys.float_info.epsilon:
-        zv = (-np.linalg.inv(Sigma_cc + 1e-12) @ Sigma_cs).T @ control.T
+    elif np.linalg.cond(Sigma_cc + 1e-8) < 1/sys.float_info.epsilon:
+        zv = (-np.linalg.inv(Sigma_cc + 1e-8) @ Sigma_cs).T @ control.T
     else:
         print('QUADRATIC CV Error: Singularity matrix...')
         return None

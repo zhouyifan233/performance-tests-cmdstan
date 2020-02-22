@@ -6,6 +6,9 @@ import numpy as np
 filenames = glob.glob('ZVCV_comparison/*.csv')
 cnt = 0
 cnt1 = 0
+mcmc_var_ = []
+linear_var_ = []
+quad_var_ = []
 linear_improve = []
 quad_improve = []
 
@@ -26,21 +29,26 @@ for i, filename in enumerate(filenames):
         flag_ = False
         print("mcmc error 2...")
     '''
+    mcmc_var_.append(np.mean(mcmc_var))
     if np.all(linear_re == -1.0):
-        linear_improve_ = np.nan
-        linear_improve.append(linear_improve_)
+        linear_improve.append(np.nan)
+        linear_var_.append(np.nan)
     else:
         linear_improve_ = np.log(np.mean(mcmc_var / linear_var))
         linear_improve.append(linear_improve_)
+        linear_var_.append(np.mean(linear_var))
+
     if np.all(quad_re == -1.0) or np.all(quad_re == 0.0):
-        quad_improve_ = np.nan
-        quad_improve.append(quad_improve_)
+        quad_improve.append(np.nan)
+        quad_var_.append(np.nan)
     else:
         quad_improve_ = np.log(np.mean(mcmc_var / quad_var))
         quad_improve.append(quad_improve_)
+        quad_var_.append(np.mean(quad_var))
 
     print("---------------------------------")
 
-results_df = pd.DataFrame({'Examples': filenames, 'linear CV improvement': linear_improve,
-                           'quadratic CV improvement': quad_improve})
+results_df = pd.DataFrame({'Examples': filenames, 'linear CV improvement (log)': linear_improve,
+                           'quadratic CV improvement (log)': quad_improve, 'pystan var': mcmc_var_,
+                           'linear CV average variance': linear_var_, 'quadratic CV average variance': quad_var_})
 results_df.to_csv('conclusions.csv')
