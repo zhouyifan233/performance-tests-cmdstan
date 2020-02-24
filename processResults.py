@@ -34,7 +34,11 @@ for i, filename in enumerate(filenames):
         linear_improve.append(np.nan)
         linear_var_.append(np.nan)
     else:
-        linear_improve_ = np.log(np.mean(mcmc_var / linear_var))
+        if np.any(linear_var == 0):
+            linear_improve_ = np.inf
+        else:
+            linear_improve_ = np.log(np.mean(mcmc_var / linear_var))
+
         linear_improve.append(linear_improve_)
         linear_var_.append(np.mean(linear_var))
 
@@ -42,7 +46,10 @@ for i, filename in enumerate(filenames):
         quad_improve.append(np.nan)
         quad_var_.append(np.nan)
     else:
-        quad_improve_ = np.log(np.mean(mcmc_var / quad_var))
+        if np.any(quad_var == 0):
+            quad_improve_ = np.inf
+        else:
+            quad_improve_ = np.log(np.mean(mcmc_var / quad_var))
         quad_improve.append(quad_improve_)
         quad_var_.append(np.mean(quad_var))
 

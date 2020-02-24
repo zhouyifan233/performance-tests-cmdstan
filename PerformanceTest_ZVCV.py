@@ -49,6 +49,8 @@ def verifyDataType(model, data):
 
 def getParameterNames(model):
     model_str = model.model_code
+    model_str = re.sub('[#|//].*', '', model_str)
+    model_str = model_str.strip()
     data_patch = re.search('parameters[ ]*{([^{}]*)}', model_str)
     data_str = data_patch.group(1)
     data_lines = data_str.split('\n')
