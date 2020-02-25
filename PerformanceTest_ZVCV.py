@@ -1,12 +1,14 @@
 import numpy as np
-import pandas as pd
 import rpy2.robjects as robjects
 import re
 from PyStan_control_variate.ControlVariate.control_variate import control_variate_linear, control_variate_quadratic
 from PyStan_control_variate.ControlVariate.plot_comparison import plot_comparison
-import logging
 import pystan
 from os import path
+import sys
+import pandas as pd
+import argparse
+from os.path import exists
 
 
 def verifyDataType(model, data):
@@ -74,23 +76,17 @@ def getParameterNames(model):
                 var_str = sep_line.group(2)
                 var_type_dic[var_str] = type_str
                 parameter_names.append(var_str)
-        '''
-        if valid_line:
-            valid_line = valid_line.group(1)
-            type_str = re.search('[ ]*([^ <>\[\]]*).*', valid_line)
-            range_str = re.search('[^<>]*<([^<>]*)>.*', valid_line)
-            size_str = re.search('[^\[\]]*\[([^\[\]]*)\].*', valid_line)
-            var_str = re.search('.* ([^ \[\]\<\>]*)[ ]*.*', valid_line)
-            if (type_str is not None) and (var_str is not None):
-                type_str = type_str.group(1)
-                var_str = var_str.group(1)
-                var_type_dic[var_str] = type_str
-                parameter_names.append(var_str)
-        '''
+
     return parameter_names
 
 
-def run_ZVCV(file_dir):
+def run_ZVCV(file_dir, output_dir):
+    output_filename = file_dir.replace('/', '@')
+    if exists(output_dir + output_filename + '.csv'):
+        return 0
+
+    print('Example Path: ' + file_dir)
+    sys.stderr.write('Example Path: ' + file_dir + ' \n')
     unconstrain_mcmc_samples = None
     cv_linear_mcmc_samples = None
     cv_quad_mcmc_samples = None
@@ -155,8 +151,54 @@ def run_ZVCV(file_dir):
             cv_quad_mcmc_samples = np.zeros_like(cv_linear_mcmc_samples)
         # plot_comparison(unconstrain_mcmc_samples, cv_linear_mcmc_samples, cv_quad_mcmc_samples, fig_name='normal.png', fig_path='/home/ubuntu/', fig_size=(8, 8))
 
+        if unconstrain_mcmc_samples is not None:
+            unconstrain_mcmc_mean = np.mean(unconstrain_mcmc_samples, axis=0)
+            unconstrain_mcmc_var = np.var(unconstrain_mcmc_samples, axis=0)
+            if cv_linear_mcmc_samples is not None:
+                cv_linear_mcmc_mean = np.mean(cv_linear_mcmc_samples, axis=0)
+                cv_linear_mcmc_var = np.var(cv_linear_mcmc_samples, axis=0)
+            else:
+                cv_linear_mcmc_mean = np.ones_like(unconstrain_mcmc_mean) * -1
+                cv_linear_mcmc_var = np.ones_like(unconstrain_mcmc_var) * -1
+
+            if cv_quad_mcmc_samples is not None:
+                cv_quad_mcmc_mean = np.mean(cv_quad_mcmc_samples, axis=0)
+                cv_quad_mcmc_var = np.var(cv_quad_mcmc_samples, axis=0)
+            else:
+                cv_quad_mcmc_mean = np.ones_like(unconstrain_mcmc_mean) * -1
+                cv_quad_mcmc_var = np.ones_like(unconstrain_mcmc_var) * -1
+
+            if unconstrain_mcmc_mean.size == 1:
+                result_dic = {'mcmc_samples_mean': [unconstrain_mcmc_mean], 'CV_linear_mean': [cv_linear_mcmc_mean],
+                              'CV_quad_mean': [cv_quad_mcmc_mean],
+                              'mcmc_samples_var': [unconstrain_mcmc_var], 'CV_linear_var': [cv_linear_mcmc_var],
+                              'CV_quad_var': [cv_quad_mcmc_var]}
+            else:
+                result_dic = {'mcmc_samples_mean': unconstrain_mcmc_mean, 'CV_linear_mean': cv_linear_mcmc_mean,
+                              'CV_quad_mean': cv_quad_mcmc_mean,
+                              'mcmc_samples_var': unconstrain_mcmc_var, 'CV_linear_var': cv_linear_mcmc_var,
+                              'CV_quad_var': cv_quad_mcmc_var}
+
+
+            result_df = pd.DataFrame(result_dic)
+            result_df.to_csv(output_dir + output_filename + '.csv')
+
+        print('------------------------------------------------------------------------')
+        sys.stderr.write('------------------------------------------------------------------------ \n')
+
     except Exception as e:
         print(e)
 
     return unconstrain_mcmc_samples, cv_linear_mcmc_samples, cv_quad_mcmc_samples
+
+
+if __name__ == "__main__":
+    # example: python PerformanceTest_ZVCV.py "example-models/BPA/Ch.07/cjs_mnl_ran/" "ZVCV-results-1/"
+    parser = argparse.ArgumentParser(description='Input example path and output path...')
+    parser.add_argument('file_dir', type=str)
+    parser.add_argument('output_dir', type=str)
+    args = parser.parse_args()
+
+    run_ZVCV(args.file_dir, args.output_dir)
+
 

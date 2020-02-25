@@ -2,84 +2,47 @@ from PerformanceTest_ZVCV import run_ZVCV
 import pandas as pd
 import numpy as np
 import sys
-from os.path import exists
+import os
+import subprocess
 
 
 # Parameters
 # output_path = 'performance-tests-cmdstan/ZVCV_comparison/'
-output_path = 'performance-tests-cmdstan/ZVCV_comparison/'
+if 0:
+    example_list_path = 'list_of_examples_2.txt'
+    output_path = 'ZVCV-results-2/'
+    terminal_path = 'ZVCV-messages-2/terminal-messages/'
+    error_path = 'ZVCV-messages-2/error-messages/'
+else:
+    example_list_path = 'list_of_examples_1.txt'
+    output_path = 'ZVCV-results-1/'
+    terminal_path = 'ZVCV-messages-1/terminal-messages/'
+    error_path = 'ZVCV-messages-1/error-messages/'
 
 # Read list of examples
 list_examples = []
-with open('list_of_examples.txt', 'r') as f:
+with open(example_list_path, 'r') as f:
     example_path = f.readline()
     while example_path:
         example_path = example_path.strip()
         list_examples.append(example_path)
         example_path = f.readline()
-print(list_examples)
+# print(list_examples)
 
 # run test
-start_i = 435    # 390 cv issue; 392;
+start_i = 0    # 390 cv issue; 392; 434
 for i, example_path in enumerate(list_examples):
-    print('------------------------------------------------------------------------')
-    print(i)
-    print(example_path)
-    sys.stderr.write('------------------------------------------------------------------------ \n')
-    sys.stderr.write('Example Index: ' + str(i) + ' \n')
-    sys.stderr.write('Example Path: ' + example_path + ' \n')
-    example_name = example_path.replace('/', '--')
+    print('Index: ' + str(i))
+    print('Example Path: ' + example_path)
 
-    if (i < start_i) or (i == -1) or (exists(output_path + example_name + '.csv')):
-        continue
+    file_dir = example_path.replace('performance-tests-cmdstan/', '')
+    output_filename = file_dir.replace('/', '@')
+    terminal_m_output = open(terminal_path + output_filename + '.txt', 'w')
+    error_m_output = open(error_path + output_filename + '.txt', 'w')
 
-    # example_name_parts = example_path.split('/')
-    unconstrain_mcmc_samples, cv_linear_mcmc_samples, cv_quad_mcmc_samples = run_ZVCV(example_path)
+    subprocess.run(['python', 'PerformanceTest_ZVCV.py',
+                   file_dir, output_path], stdout=terminal_m_output, stderr=error_m_output, text=True)
+    terminal_m_output.close()
+    error_m_output.close()
 
-    if unconstrain_mcmc_samples is not None:
-        unconstrain_mcmc_mean = np.mean(unconstrain_mcmc_samples, axis=0)
-        unconstrain_mcmc_var = np.var(unconstrain_mcmc_samples, axis=0)
-        if cv_linear_mcmc_samples is not None:
-            cv_linear_mcmc_mean = np.mean(cv_linear_mcmc_samples, axis=0)
-            cv_linear_mcmc_var = np.var(cv_linear_mcmc_samples, axis=0)
-        else:
-            cv_linear_mcmc_mean = np.ones_like(unconstrain_mcmc_mean) * -1
-            cv_linear_mcmc_var = np.ones_like(unconstrain_mcmc_var) * -1
-
-        if cv_quad_mcmc_samples is not None:
-            cv_quad_mcmc_mean = np.mean(cv_quad_mcmc_samples, axis=0)
-            cv_quad_mcmc_var = np.var(cv_quad_mcmc_samples, axis=0)
-        else:
-            cv_quad_mcmc_mean = np.ones_like(unconstrain_mcmc_mean) * -1
-            cv_quad_mcmc_var = np.ones_like(unconstrain_mcmc_var) * -1
-
-        if unconstrain_mcmc_mean.size == 1:
-            result_dic = {'mcmc_samples_mean': [unconstrain_mcmc_mean], 'CV_linear_mean': [cv_linear_mcmc_mean],
-                          'CV_quad_mean': [cv_quad_mcmc_mean],
-                          'mcmc_samples_var': [unconstrain_mcmc_var], 'CV_linear_var': [cv_linear_mcmc_var],
-                          'CV_quad_var': [cv_quad_mcmc_var]}
-        else:
-            result_dic = {'mcmc_samples_mean': unconstrain_mcmc_mean, 'CV_linear_mean': cv_linear_mcmc_mean, 'CV_quad_mean': cv_quad_mcmc_mean,
-                          'mcmc_samples_var': unconstrain_mcmc_var, 'CV_linear_var': cv_linear_mcmc_var, 'CV_quad_var': cv_quad_mcmc_var}
-
-        result_df = pd.DataFrame(result_dic)
-        result_df.to_csv(output_path + example_name + '.csv')
-
-    print('------------------------------------------------------------------------')
-    sys.stderr.write('------------------------------------------------------------------------ \n')
-
-    if 0:
-        with open(output_path + example_name + '.dat', 'w') as f:
-            f.write('MCMC without ZVCV: \n')
-            f.write(str(unconstrain_mcmc_samples))
-            f.write('------------------------------------------ \n')
-            f.write('------------------------------------------ \n')
-            f.write('MCMC with linear ZVCV: \n')
-            f.write(str(cv_linear_mcmc_samples))
-            f.write('------------------------------------------ \n')
-            f.write('------------------------------------------ \n')
-            f.write('MCMC without quadratic ZVCV: \n')
-            f.write(str(cv_quad_mcmc_samples))
-            f.write('------------------------------------------ \n')
-            f.write('------------------------------------------ \n')
 

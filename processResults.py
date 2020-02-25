@@ -21,14 +21,7 @@ for i, filename in enumerate(filenames):
     linear_var = np.array(result['CV_linear_var'])
     quad_re = np.array(result['CV_quad_mean'])
     quad_var = np.array(result['CV_quad_var'])
-    '''
-    if np.all(mcmc_var == 0.0):
-        flag_ = False
-        print("mcmc error 1...")
-    if np.all(mcmc_var == -1.0):
-        flag_ = False
-        print("mcmc error 2...")
-    '''
+
     mcmc_var_.append(np.mean(mcmc_var))
     if np.all(linear_re == -1.0):
         linear_improve.append(np.nan)
