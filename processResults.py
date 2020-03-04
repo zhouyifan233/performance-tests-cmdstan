@@ -3,7 +3,7 @@ import glob
 import numpy as np
 
 
-filenames = glob.glob('ZVCV_comparison/*.csv')
+filenames = glob.glob('ZVCV-results-2/*.csv')
 cnt = 0
 cnt1 = 0
 mcmc_var_ = []
@@ -30,7 +30,7 @@ for i, filename in enumerate(filenames):
         if np.any(linear_var == 0):
             linear_improve_ = np.inf
         else:
-            linear_improve_ = np.log(np.mean(mcmc_var / linear_var))
+            linear_improve_ = np.mean(mcmc_var / linear_var)
 
         linear_improve.append(linear_improve_)
         linear_var_.append(np.mean(linear_var))
@@ -42,13 +42,13 @@ for i, filename in enumerate(filenames):
         if np.any(quad_var == 0):
             quad_improve_ = np.inf
         else:
-            quad_improve_ = np.log(np.mean(mcmc_var / quad_var))
+            quad_improve_ = np.mean(mcmc_var / quad_var)
         quad_improve.append(quad_improve_)
         quad_var_.append(np.mean(quad_var))
 
     print("---------------------------------")
 
-results_df = pd.DataFrame({'Examples': filenames, 'linear CV improvement (log)': linear_improve,
-                           'quadratic CV improvement (log)': quad_improve, 'pystan var': mcmc_var_,
+results_df = pd.DataFrame({'Examples': filenames, 'linear CV improvement': linear_improve,
+                           'quadratic CV improvement': quad_improve, 'pystan var': mcmc_var_,
                            'linear CV average variance': linear_var_, 'quadratic CV average variance': quad_var_})
-results_df.to_csv('conclusions.csv')
+results_df.to_csv('conclusions_2.csv')
